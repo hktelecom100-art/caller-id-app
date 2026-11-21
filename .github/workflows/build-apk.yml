@@ -13,7 +13,7 @@ jobs:
 
       - name: Unzip project
         run: |
-          unzip -q caller_id_app.zip
+          unzip -q -o caller_id_app.zip
           cp -r caller_id_app/lib ./lib
           cp caller_id_app/pubspec.yaml ./pubspec.yaml
 
@@ -35,45 +35,8 @@ jobs:
           cp /tmp/pubspec_backup.yaml pubspec.yaml
           rm -rf test
 
-      - name: Add Android permissions
-        run: |
-          python3 - << 'PY'
-          p = 'android/app/src/main/AndroidManifest.xml'
-          s = open(p).read()
-          add = '''
-              <uses-permission android:name="android.permission.READ_CALL_LOG"/>
-              <uses-permission android:name="android.permission.READ_CONTACTS"/>
-              <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-              <queries>
-                  <intent>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <data android:scheme="tel"/>
-                  </intent>
-              </queries>
-          '''
-          i = s.index('>', s.index('<manifest')) + 1
-          s = s[:i] + add + s[i:]
-          open(p, 'w').write(s)
-          PY
-
-      - name: Enable core library desugaring
-        run: |
-          python3 - << 'PY'
-          import os
-          d = 'android/app/'
-          if os.path.exists(d + 'build.gradle.kts'):
-              p = d + 'build.gradle.kts'
-              s = open(p).read()
-              s = s.replace('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true', 1)
-              s += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
-          else:
-              p = d + 'build.gradle'
-              s = open(p).read()
-              s = s.replace('compileOptions {', 'compileOptions {\n        coreLibraryDesugaringEnabled true', 1)
-              s += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n"
-          open(p, 'w').write(s)
-          print(s)
-          PY
+      - name: Patch Android project
+        run: python3 caller_id_app/tools/patch_android.py
 
       - run: flutter pub get
       - run: flutter build apk --release
