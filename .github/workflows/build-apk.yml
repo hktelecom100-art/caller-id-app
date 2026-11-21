@@ -11,9 +11,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip project
+      - name: Find project files
         run: |
-          unzip -q -o caller_id_app.zip
+          found=""
+          if [ -f caller_id_app/tools/patch_android.py ]; then found=1; fi
+          if [ -z "$found" ] && [ -f tools/patch_android.py ]; then
+            mkdir -p caller_id_app
+            cp -r lib tools pubspec.yaml caller_id_app/
+            found=1
+          fi
+          if [ -z "$found" ]; then
+            for z in *.zip; do
+              [ -e "$z" ] || continue
+              rm -rf /tmp/z && mkdir /tmp/z
+              unzip -q -o "$z" -d /tmp/z || continue
+              if [ -f /tmp/z/caller_id_app/tools/patch_android.py ]; then
+                rm -rf caller_id_app
+                cp -r /tmp/z/caller_id_app ./caller_id_app
+                found=1
+              fi
+            done
+          fi
+          if [ -z "$found" ]; then
+            echo "NEW FILES NOT FOUND. Files in repo:"
+            ls -la
+            exit 1
+          fi
+          rm -rf lib
           cp -r caller_id_app/lib ./lib
           cp caller_id_app/pubspec.yaml ./pubspec.yaml
 
