@@ -56,6 +56,25 @@ jobs:
           open(p, 'w').write(s)
           PY
 
+      - name: Enable core library desugaring
+        run: |
+          python3 - << 'PY'
+          import os
+          d = 'android/app/'
+          if os.path.exists(d + 'build.gradle.kts'):
+              p = d + 'build.gradle.kts'
+              s = open(p).read()
+              s = s.replace('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true', 1)
+              s += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
+          else:
+              p = d + 'build.gradle'
+              s = open(p).read()
+              s = s.replace('compileOptions {', 'compileOptions {\n        coreLibraryDesugaringEnabled true', 1)
+              s += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n"
+          open(p, 'w').write(s)
+          print(s)
+          PY
+
       - run: flutter pub get
       - run: flutter build apk --release
 
