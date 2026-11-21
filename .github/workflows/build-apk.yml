@@ -11,6 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Unzip project
+        run: |
+          unzip -q caller_id_app.zip
+          cp -r caller_id_app/lib ./lib
+          cp caller_id_app/pubspec.yaml ./pubspec.yaml
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
